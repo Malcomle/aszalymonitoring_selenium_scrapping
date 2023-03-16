@@ -33,17 +33,22 @@ def getValues(type):
         for row in rows[1:]:
             cells = row.find_elements(By.TAG_NAME, "td")    
 
+            date = cells[0].text
+            if date not in weather_data:
+                weather_data[date] = {}
+
             if cells[2].text != "-" or cells[1].text != "-":
                 if type == "temp":
-                    values_temp[cells[0].text] = cells[2].text
+                    weather_data[date]['temp'] = cells[2].text
                 if type == "soil":
-                    values_soil10[cells[0].text] = cells[1].text
-                    values_soil20[cells[0].text] = cells[2].text
+                    weather_data[date]['soil10'] = cells[1].text
+                    weather_data[date]['soil20'] = cells[2].text
                 if type == "moisture":
-                    values_moisture10[cells[0].text] = cells[1].text
-                    values_moisture20[cells[0].text] = cells[2].text
+                    weather_data[date]['moisture10'] = cells[1].text
+                    weather_data[date]['moisture20'] = cells[2].text
     except:
-        print("No data for this period")    
+        print("No data for this period")
+ 
 
 def getTemparturesValues():   
     parameters = Select(driver.find_element(By.ID, "drought_parameter"))
@@ -76,37 +81,26 @@ def getMoistureTemparturesValues(value):
 
     getValues("moisture")   
 
-def send_to_mongodb(values_temp, values_soil10, values_soil20, values_moisture10, values_moisture20):
+def send_to_mongodb(station, weather_data):
     client = MongoClient('mongodb://localhost:27017/')
     db = client.weather_data
-    temperature = db.temperature
-    soil_temperature_10 = db.soil_temperature_10
-    soil_temperature_20 = db.soil_temperature_20
-    moisture_10 = db.moisture_10
-    moisture_20 = db.moisture_20
 
-    for date, value in values_temp.items():
-        temperature.insert_one({'date': date, 'value': value})
+    # Créez une collection avec le nom de la station
+    weather_collection = db[station]
 
-    for date, value in values_soil10.items():
-        soil_temperature_10.insert_one({'date': date, 'value': value})
-
-    for date, value in values_soil20.items():
-        soil_temperature_20.insert_one({'date': date, 'value': value})
-
-    for date, value in values_moisture10.items():
-        moisture_10.insert_one({'date': date, 'value': value})
-
-    for date, value in values_moisture20.items():
-        moisture_20.insert_one({'date': date, 'value': value})
+    for date, data in weather_data.items():
+        document = {
+            "date": date,
+            "data": data
+        }
+        weather_collection.insert_one(document)
 
     client.close()
 
-values_temp = {}
-values_soil10 = {}
-values_soil20 = {}
-values_moisture10 = {}
-values_moisture20 = {}
+
+
+
+weather_data = {}
 
 url = 'https://aszalymonitoring.vizugy.hu/index.php?view=customgraph'
 
@@ -150,6 +144,7 @@ for i in range(4):
     
 
 #mongodb send values
-send_to_mongodb(values_temp, values_soil10, values_soil20, values_moisture10, values_moisture20)
+send_to_mongodb("Csolnok", weather_data)
+
 
 driver.quit()
