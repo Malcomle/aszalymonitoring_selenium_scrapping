@@ -92,6 +92,33 @@ def send_to_mongodb(station, weather_data):
 
     client.close()
 
+def getStationData(station) :
+    select = Select(driver.find_element(By.XPATH, "//*[@id='drought_station']"))
+    select.select_by_visible_text(station)
+
+    todayDate = datetime.date.today().strftime('%Y-%m-%d')
+
+    for i in range(4):    
+        todayDateWithout90days = Without90Days(todayDate)
+
+        startDate = driver.find_element(By.NAME, "drought_startdate")
+        startDate.clear()
+        startDate.send_keys(todayDateWithout90days)
+
+        endDate = driver.find_element(By.NAME, "drought_enddate")
+        endDate.clear()
+        endDate.send_keys(str(todayDate))
+
+        dataDensity = Select(driver.find_element(By.ID, "drought_interval"))
+        dataDensity.select_by_visible_text("napi")
+
+        getTemparturesValues()
+        getSoilTemparturesValues()
+        getMoistureTemparturesValues("Talajnedvesség(10 cm) (V/V %)")
+        getMoistureTemparturesValues("Talajnedvesség(20 cm) (V/V %)")
+        todayDate = todayDateWithout90days
+        
+        send_to_mongodb(station, weather_data)
 
 weather_data = {}
 
@@ -105,31 +132,9 @@ driver = webdriver.Chrome(service=s, options=chrome_options)
 
 driver.get(url)
 
-select = Select(driver.find_element(By.XPATH, "//*[@id='drought_station']"))
-select.select_by_visible_text("Csolnok")
-
-todayDate = datetime.date.today().strftime('%Y-%m-%d')
-
-for i in range(4):    
-    todayDateWithout90days = Without90Days(todayDate)
-
-    startDate = driver.find_element(By.NAME, "drought_startdate")
-    startDate.clear()
-    startDate.send_keys(todayDateWithout90days)
-
-    endDate = driver.find_element(By.NAME, "drought_enddate")
-    endDate.clear()
-    endDate.send_keys(str(todayDate))
-
-    dataDensity = Select(driver.find_element(By.ID, "drought_interval"))
-    dataDensity.select_by_visible_text("napi")
-
-    getTemparturesValues()
-    getSoilTemparturesValues()
-    getMoistureTemparturesValues("Talajnedvesség(10 cm) (V/V %)")
-    getMoistureTemparturesValues("Talajnedvesség(20 cm) (V/V %)")
-    todayDate = todayDateWithout90days
-    
-send_to_mongodb("Csolnok", weather_data)
+stations = ["Csolnok", "Tata"]
+for station in stations:
+    print(station)
+    getStationData(station)
 
 driver.quit()
