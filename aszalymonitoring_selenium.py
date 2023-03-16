@@ -6,9 +6,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
-import time
-import os
-import csv
+from pymongo import MongoClient
+
+client = MongoClient('your_connection_string')
+
 
 def Without90Days(actualDate):
     actualDate = datetime.datetime.strptime(actualDate, '%Y-%m-%d').date()
@@ -75,6 +76,32 @@ def getMoistureTemparturesValues(value):
 
     getValues("moisture")   
 
+def send_to_mongodb(values_temp, values_soil10, values_soil20, values_moisture10, values_moisture20):
+    client = MongoClient('mongodb://localhost:27017/')
+    db = client.weather_data
+    temperature = db.temperature
+    soil_temperature_10 = db.soil_temperature_10
+    soil_temperature_20 = db.soil_temperature_20
+    moisture_10 = db.moisture_10
+    moisture_20 = db.moisture_20
+
+    for date, value in values_temp.items():
+        temperature.insert_one({'date': date, 'value': value})
+
+    for date, value in values_soil10.items():
+        soil_temperature_10.insert_one({'date': date, 'value': value})
+
+    for date, value in values_soil20.items():
+        soil_temperature_20.insert_one({'date': date, 'value': value})
+
+    for date, value in values_moisture10.items():
+        moisture_10.insert_one({'date': date, 'value': value})
+
+    for date, value in values_moisture20.items():
+        moisture_20.insert_one({'date': date, 'value': value})
+
+    client.close()
+
 values_temp = {}
 values_soil10 = {}
 values_soil20 = {}
@@ -122,12 +149,7 @@ for i in range(4):
     todayDate = todayDateWithout90days
     
 
-#end of the first table
-sorted_values_by_date = dict(sorted(values_temp.items()))
-for date, value in sorted_values_by_date.items():
-    print(f"{date}: {value}")
-print(len(sorted_values_by_date))
-print(len(values_soil10))
-print(len(values_soil20))
+#mongodb send values
+send_to_mongodb(values_temp, values_soil10, values_soil20, values_moisture10, values_moisture20)
 
 driver.quit()
