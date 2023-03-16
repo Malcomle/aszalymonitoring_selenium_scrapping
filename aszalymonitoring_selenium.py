@@ -8,16 +8,12 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 from pymongo import MongoClient
 
-client = MongoClient('your_connection_string')
-
-
 def Without90Days(actualDate):
     actualDate = datetime.datetime.strptime(actualDate, '%Y-%m-%d').date()
     delta = datetime.timedelta(days=90)
     todayDateWithout90days = actualDate - delta
     startDateString = todayDateWithout90days.strftime('%Y-%m-%d')
     return startDateString
-
 
 def getValues(type):
     driver.find_element(By.XPATH, '/html/body/div[1]/form/div[2]/input').click()
@@ -49,7 +45,6 @@ def getValues(type):
     except:
         print("No data for this period")
  
-
 def getTemparturesValues():   
     parameters = Select(driver.find_element(By.ID, "drought_parameter"))
     parameters.select_by_visible_text("Levegőhőmérséklet (°C)")
@@ -98,16 +93,11 @@ def send_to_mongodb(station, weather_data):
     client.close()
 
 
-
-
 weather_data = {}
 
 url = 'https://aszalymonitoring.vizugy.hu/index.php?view=customgraph'
 
 chrome_options = webdriver.ChromeOptions()
-# Uncomment the following line if you want to run Chrome in headless mode
-# chrome_options.add_argument("--headless")
-
 chromedriver_path = "./chromedriver"
 s = Service(executable_path=chromedriver_path)
 
@@ -118,10 +108,8 @@ driver.get(url)
 select = Select(driver.find_element(By.XPATH, "//*[@id='drought_station']"))
 select.select_by_visible_text("Csolnok")
 
-# boucle 3 times
 todayDate = datetime.date.today().strftime('%Y-%m-%d')
 
-#get temperatures
 for i in range(4):    
     todayDateWithout90days = Without90Days(todayDate)
 
@@ -142,9 +130,6 @@ for i in range(4):
     getMoistureTemparturesValues("Talajnedvesség(20 cm) (V/V %)")
     todayDate = todayDateWithout90days
     
-
-#mongodb send values
 send_to_mongodb("Csolnok", weather_data)
-
 
 driver.quit()
