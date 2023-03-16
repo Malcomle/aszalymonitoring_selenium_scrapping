@@ -24,7 +24,7 @@ def getValues(table):
         cells = row.find_elements(By.TAG_NAME, "td")    
     
         date = cells[0].text
-        value = cells[1].text
+        value = cells[2].text
         
         if value != "-":
             values_by_date[date] = value
@@ -40,6 +40,9 @@ def get3MonthsValues(newDateStart, newDateEnd):
 
     dataDensity = Select(driver.find_element(By.ID, "drought_interval"))
     dataDensity.select_by_visible_text("napi")
+
+    dataDensity = Select(driver.find_element(By.ID, "drought_function"))
+    dataDensity.select_by_visible_text("minimum - átlag - maximum")
 
     driver.find_element(By.XPATH, '/html/body/div[1]/form/div[2]/input').click()
 
@@ -79,7 +82,7 @@ select.select_by_visible_text("Csolnok")
 # boucle 3 times
 todayDate = datetime.date.today().strftime('%Y-%m-%d')
 
-for i in range(3):    
+for i in range(4):    
     todayDateWithout90days = Without90Days(todayDate)
     print(todayDateWithout90days)
     print(todayDate)
@@ -90,5 +93,6 @@ for i in range(3):
 sorted_values_by_date = dict(sorted(values_by_date.items()))
 for date, value in sorted_values_by_date.items():
     print(f"{date}: {value}")
+print(len(sorted_values_by_date))
 
 driver.quit()
