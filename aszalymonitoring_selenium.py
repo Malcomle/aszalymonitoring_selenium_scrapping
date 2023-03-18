@@ -8,14 +8,18 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 from pymongo import MongoClient
 
-def Without90Days(actualDate):
-    actualDate = datetime.datetime.strptime(actualDate, '%Y-%m-%d').date()
+def without_90_days(actual_date):
+    actual_date = datetime.datetime.strptime(actual_date, '%Y-%m-%d').date()
     delta = datetime.timedelta(days=90)
-    todayDateWithout90days = actualDate - delta
-    startDateString = todayDateWithout90days.strftime('%Y-%m-%d')
-    return startDateString
+    today_date_without_90_days = actual_date - delta
+    start_date_string = today_date_without_90_days.strftime('%Y-%m-%d')
+    return start_date_string
 
-def getValues(type):
+def select_option_by_text(element_id, text):
+    select = Select(driver.find_element(By.ID, element_id))
+    select.select_by_visible_text(text)
+
+def get_values(type):
     driver.find_element(By.XPATH, '/html/body/div[1]/form/div[2]/input').click()
 
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="drought_chart_0_container"]/h1')))
@@ -45,16 +49,16 @@ def getValues(type):
     except:
         print("No data for this period")
  
-def getTemparturesValues():   
+def get_temperature_values():   
     parameters = Select(driver.find_element(By.ID, "drought_parameter"))
     parameters.select_by_visible_text("Levegőhőmérséklet (°C)")
 
     operation = Select(driver.find_element(By.ID, "drought_function"))
     operation.select_by_visible_text("minimum - átlag - maximum")   
 
-    getValues("temp")
+    get_values("temp")
 
-def getSoilTemparturesValues():
+def get_soil_temperature_values():
     operation = Select(driver.find_element(By.ID, "drought_function"))
     operation.select_by_visible_text("átlag")
 
@@ -66,15 +70,15 @@ def getSoilTemparturesValues():
     parameters = Select(driver.find_element(By.ID, "drought_parameter_1"))
     parameters.select_by_visible_text("Talajhőmérséklet(20 cm) (°C)")
 
-    getValues("soil")
+    get_values("soil")
 
     driver.find_element(By.ID, 'drought_parameter_1_btn').click()
 
-def getMoistureTemparturesValues(value):
+def get_moisture_temperature_values(value):
     parameters = Select(driver.find_element(By.ID, "drought_parameter"))
     parameters.select_by_visible_text(value)
 
-    getValues("moisture")   
+    get_values("moisture")   
 
 def send_to_mongodb(station, weather_data):
     client = MongoClient('mongodb://localhost:27017/')
@@ -92,31 +96,29 @@ def send_to_mongodb(station, weather_data):
 
     client.close()
 
-def getStationData(station) :
-    select = Select(driver.find_element(By.XPATH, "//*[@id='drought_station']"))
-    select.select_by_visible_text(station)
+def get_station_data(station):
+    select_option_by_text("drought_station", station)
 
-    todayDate = datetime.date.today().strftime('%Y-%m-%d')
+    today_date = datetime.date.today().strftime('%Y-%m-%d')
 
     for i in range(4):    
-        todayDateWithout90days = Without90Days(todayDate)
+        today_date_without_90_days = without_90_days(today_date)
 
-        startDate = driver.find_element(By.NAME, "drought_startdate")
-        startDate.clear()
-        startDate.send_keys(todayDateWithout90days)
+        start_date = driver.find_element(By.NAME, "drought_startdate")
+        start_date.clear()
+        start_date.send_keys(today_date_without_90_days)
 
-        endDate = driver.find_element(By.NAME, "drought_enddate")
-        endDate.clear()
-        endDate.send_keys(str(todayDate))
+        end_date = driver.find_element(By.NAME, "drought_enddate")
+        end_date.clear()
+        end_date.send_keys(str(today_date))
 
-        dataDensity = Select(driver.find_element(By.ID, "drought_interval"))
-        dataDensity.select_by_visible_text("napi")
+        select_option_by_text("drought_interval", "napi")
 
-        getTemparturesValues()
-        getSoilTemparturesValues()
-        getMoistureTemparturesValues("Talajnedvesség(10 cm) (V/V %)")
-        getMoistureTemparturesValues("Talajnedvesség(20 cm) (V/V %)")
-        todayDate = todayDateWithout90days
+        get_temperature_values()
+        get_soil_temperature_values()
+        get_moisture_temperature_values("Talajnedvesség(10 cm) (V/V %)")
+        get_moisture_temperature_values("Talajnedvesség(20 cm) (V/V %)")
+        today_date = today_date_without_90_days
         
         send_to_mongodb(station, weather_data)
 
@@ -135,6 +137,6 @@ driver.get(url)
 stations = ["Csolnok", "Tata"]
 for station in stations:
     print(station)
-    getStationData(station)
+    get_station_data(station)
 
 driver.quit()
