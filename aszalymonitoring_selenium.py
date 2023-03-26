@@ -7,7 +7,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 from pymongo import MongoClient
-from constants import CHROME_DRIVER_PATH, WEBSITE_URL, STATIONS
+from constant import CHROME_DRIVER_PATH, WEBSITE_URL, STATIONS
 
 
 def without_90_days(actual_date):
