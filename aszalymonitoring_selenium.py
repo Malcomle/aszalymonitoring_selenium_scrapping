@@ -7,6 +7,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 from pymongo import MongoClient
+from constants import CHROME_DRIVER_PATH, WEBSITE_URL, STATIONS
+
 
 def without_90_days(actual_date):
     actual_date = datetime.datetime.strptime(actual_date, '%Y-%m-%d').date()
@@ -124,17 +126,17 @@ def get_station_data(station):
 
 weather_data = {}
 
-url = 'https://aszalymonitoring.vizugy.hu/index.php?view=customgraph'
+url = WEBSITE_URL
 
 chrome_options = webdriver.ChromeOptions()
-chromedriver_path = "./chromedriver"
+chromedriver_path = CHROME_DRIVER_PATH
 s = Service(executable_path=chromedriver_path)
 
 driver = webdriver.Chrome(service=s, options=chrome_options)
 
 driver.get(url)
 
-stations = ["Csolnok", "Tata"]
+stations = STATIONS
 for station in stations:
     print(station)
     get_station_data(station)
