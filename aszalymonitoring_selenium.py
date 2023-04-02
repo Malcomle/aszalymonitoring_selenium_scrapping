@@ -54,12 +54,12 @@ def get_values(driver, type, weather_data):
             if cells[2].text != "-" or cells[1].text != "-" :
                 weather_data[date][type] = cells[2].text
     except:
-        print("No data for this period")
+        print("No data for this period : "+weather_data)
  
 
 def send_to_mongodb(station, weather_data):
     client = MongoClient('mongodb://localhost:27017/')
-    db = client.weather_data5
+    db = client.weather_data
 
     # Créez une collection avec le nom de la station
     weather_collection = db[station]
@@ -106,6 +106,9 @@ def get_station_data(driver, station):
             get_values(driver, "Talajnedvesség(10 cm) (V/V %)", weather_data)
             get_values(driver, "Talajhőmérséklet(20 cm) (°C)", weather_data)
             get_values(driver, "Talajnedvesség(20 cm) (V/V %)", weather_data)
+            get_values(driver, "Relatív páratartalom (%)", weather_data)
+            get_values(driver, "Vízhiány(35 cm) (mm)", weather_data)
+            get_values(driver, "Vízhiány(80 cm) (mm)", weather_data)
 
             today_date = today_date_without_90_days
             print(f"Finished processing {i + 1} iteration for station: {station}")
