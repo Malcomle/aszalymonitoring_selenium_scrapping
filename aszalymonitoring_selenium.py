@@ -39,14 +39,14 @@ def get_values(type):
             if date not in weather_data:
                 weather_data[date] = {}
 
-            if cells[2].text != "-" or cells[1].text != "-":
+            if cells[2].text != "-" or cells[1].text != "-" :
                 if type == "temp":
                     weather_data[date]['temp'] = cells[2].text
                 if type == "soil":
-                    weather_data[date]['soil10'] = cells[1].text
-                    weather_data[date]['soil20'] = cells[2].text
+                    weather_data[date]['soil10'] = cells[2].text
+                    weather_data[date]['soil20'] = cells[2].text                    
                 if type == "moisture":
-                    weather_data[date]['moisture10'] = cells[1].text
+                    weather_data[date]['moisture10'] = cells[2].text
                     weather_data[date]['moisture20'] = cells[2].text
     except:
         print("No data for this period")
@@ -60,21 +60,11 @@ def get_temperature_values():
 
     get_values("temp")
 
-def get_soil_temperature_values():
-    operation = Select(driver.find_element(By.ID, "drought_function"))
-    operation.select_by_visible_text("átlag")
-
+def get_soil_temperature_values(value):
     parameters = Select(driver.find_element(By.ID, "drought_parameter"))
-    parameters.select_by_visible_text("Talajhőmérséklet(10 cm) (°C)")
-
-    driver.find_element(By.ID, 'drought_add_parameter_btn').click()
-
-    parameters = Select(driver.find_element(By.ID, "drought_parameter_1"))
-    parameters.select_by_visible_text("Talajhőmérséklet(20 cm) (°C)")
+    parameters.select_by_visible_text(value)
 
     get_values("soil")
-
-    driver.find_element(By.ID, 'drought_parameter_1_btn').click()
 
 def get_moisture_temperature_values(value):
     parameters = Select(driver.find_element(By.ID, "drought_parameter"))
@@ -117,7 +107,8 @@ def get_station_data(station):
         select_option_by_text("drought_interval", "napi")
 
         get_temperature_values()
-        get_soil_temperature_values()
+        get_soil_temperature_values("Talajhőmérséklet(10 cm) (°C)")
+        get_soil_temperature_values("Talajhőmérséklet(20 cm) (°C)")
         get_moisture_temperature_values("Talajnedvesség(10 cm) (V/V %)")
         get_moisture_temperature_values("Talajnedvesség(20 cm) (V/V %)")
         today_date = today_date_without_90_days
