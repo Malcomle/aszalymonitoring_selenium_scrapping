@@ -31,6 +31,9 @@ def select_option_by_text(driver, element_id, text):
     select.select_by_visible_text(text)
 
 def get_values(driver, type, weather_data):
+    parameters = Select(driver.find_element(By.ID, "drought_parameter"))
+    parameters.select_by_visible_text(type) 
+
     driver.find_element(By.XPATH, '/html/body/div[1]/form/div[2]/input').click()
 
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="drought_chart_0_container"]/h1')))
@@ -49,39 +52,14 @@ def get_values(driver, type, weather_data):
                 weather_data[date] = {}
 
             if cells[2].text != "-" or cells[1].text != "-" :
-                if type == "temp":
-                    weather_data[date]['temp'] = cells[2].text
-                if type == "soil":
-                    weather_data[date]['soil10'] = cells[2].text                    
-                if type == "moisture":
-                    weather_data[date]['moisture10'] = cells[2].text
+                weather_data[date][type] = cells[2].text
     except:
         print("No data for this period")
  
-def get_temperature_values(driver, weather_data):   
-    parameters = Select(driver.find_element(By.ID, "drought_parameter"))
-    parameters.select_by_visible_text("Levegőhőmérséklet (°C)")
-
-    operation = Select(driver.find_element(By.ID, "drought_function"))
-    operation.select_by_visible_text("minimum - átlag - maximum")   
-
-    get_values(driver, "temp", weather_data)
-
-def get_soil_temperature_values(driver, value, weather_data):
-    parameters = Select(driver.find_element(By.ID, "drought_parameter"))
-    parameters.select_by_visible_text(value)
-
-    get_values(driver, "soil", weather_data)
-
-def get_moisture_temperature_values(driver, value, weather_data):
-    parameters = Select(driver.find_element(By.ID, "drought_parameter"))
-    parameters.select_by_visible_text(value)
-
-    get_values(driver, "moisture", weather_data)   
 
 def send_to_mongodb(station, weather_data):
     client = MongoClient('mongodb://localhost:27017/')
-    db = client.weather_data3
+    db = client.weather_data5
 
     # Créez une collection avec le nom de la station
     weather_collection = db[station]
@@ -105,7 +83,7 @@ def get_station_data(driver, station):
         select_option_by_text(driver, "drought_station", station)
 
         today_date = datetime.date.today().strftime('%Y-%m-%d')
-
+        
         for i in range(4):   
  
             today_date_without_90_days = without_90_days(today_date)
@@ -120,9 +98,15 @@ def get_station_data(driver, station):
 
             select_option_by_text(driver, "drought_interval", "napi")  # Add 'driver' as the first argument
 
-            get_temperature_values(driver, weather_data)
-            get_soil_temperature_values(driver, "Talajhőmérséklet(10 cm) (°C)", weather_data)
-            get_moisture_temperature_values(driver, "Talajnedvesség(10 cm) (V/V %)", weather_data)
+            operation = Select(driver.find_element(By.ID, "drought_function"))
+            operation.select_by_visible_text("minimum - átlag - maximum") 
+
+            get_values(driver, "Levegőhőmérséklet (°C)", weather_data)
+            get_values(driver, "Talajhőmérséklet(10 cm) (°C)", weather_data)
+            get_values(driver, "Talajnedvesség(10 cm) (V/V %)", weather_data)
+            get_values(driver, "Talajhőmérséklet(20 cm) (°C)", weather_data)
+            get_values(driver, "Talajnedvesség(20 cm) (V/V %)", weather_data)
+
             today_date = today_date_without_90_days
             print(f"Finished processing {i + 1} iteration for station: {station}")
         send_to_mongodb(station, weather_data)

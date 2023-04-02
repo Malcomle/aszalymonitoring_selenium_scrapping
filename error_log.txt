@@ -25,3 +25,21 @@ Error occurred while processing station Tata: get_temperature_values() missing 1
 Error occurred while processing station Pusztaszabolcs: get_temperature_values() missing 1 required positional argument: 'weather_data'
 Error occurred while processing station Bernecebaráti: get_temperature_values() missing 1 required positional argument: 'weather_data'
 Error occurred while processing station Csókakő: get_temperature_values() missing 1 required positional argument: 'weather_data'
+Error occurred while processing station Csókakő: Message: Could not locate element with visible text: minimum - átlag - maximum
+
+Error occurred while processing station Sződ: Message: Could not locate element with visible text: minimum - átlag - maximum
+
+Error occurred while processing station Bernecebaráti: Message: Could not locate element with visible text: minimum - átlag - maximum
+
+Error occurred while processing station Csolnok: Message: Could not locate element with visible text: minimum - átlag - maximum
+
+Error occurred while processing station Pusztaszabolcs: Message: Could not locate element with visible text: minimum - átlag - maximum
+
+Error occurred while processing station Tata: Message: Could not locate element with visible text: minimum - átlag - maximum
+
+Error occurred while processing station Csolnok: maximum recursion depth exceeded
+Error occurred while processing station Pusztaszabolcs: maximum recursion depth exceeded
+Error occurred while processing station Csókakő: maximum recursion depth exceeded
+Error occurred while processing station Tata: maximum recursion depth exceeded
+Error occurred while processing station Bernecebaráti: maximum recursion depth exceeded
+Error occurred while processing station Sződ: maximum recursion depth exceeded
