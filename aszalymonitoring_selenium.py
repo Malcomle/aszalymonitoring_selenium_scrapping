@@ -7,7 +7,16 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 from pymongo import MongoClient
-from constant import CHROME_DRIVER_PATH, WEBSITE_URL, STATIONS
+from constant import CHROME_DRIVER_PATH, WEBSITE_URL, STATIONS, WORKERS
+from concurrent.futures import ThreadPoolExecutor
+import multiprocessing
+import threading
+
+
+num_cpu_cores = multiprocessing.cpu_count()
+print(f"Number of CPU cores: {num_cpu_cores}")
+
+
 
 
 def without_90_days(actual_date):
@@ -17,11 +26,11 @@ def without_90_days(actual_date):
     start_date_string = today_date_without_90_days.strftime('%Y-%m-%d')
     return start_date_string
 
-def select_option_by_text(element_id, text):
+def select_option_by_text(driver, element_id, text):
     select = Select(driver.find_element(By.ID, element_id))
     select.select_by_visible_text(text)
 
-def get_values(type):
+def get_values(driver, type, weather_data):
     driver.find_element(By.XPATH, '/html/body/div[1]/form/div[2]/input').click()
 
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="drought_chart_0_container"]/h1')))
@@ -43,93 +52,105 @@ def get_values(type):
                 if type == "temp":
                     weather_data[date]['temp'] = cells[2].text
                 if type == "soil":
-                    weather_data[date]['soil10'] = cells[2].text
-                    weather_data[date]['soil20'] = cells[2].text                    
+                    weather_data[date]['soil10'] = cells[2].text                    
                 if type == "moisture":
                     weather_data[date]['moisture10'] = cells[2].text
-                    weather_data[date]['moisture20'] = cells[2].text
     except:
         print("No data for this period")
  
-def get_temperature_values():   
+def get_temperature_values(driver, weather_data):   
     parameters = Select(driver.find_element(By.ID, "drought_parameter"))
     parameters.select_by_visible_text("Levegőhőmérséklet (°C)")
 
     operation = Select(driver.find_element(By.ID, "drought_function"))
     operation.select_by_visible_text("minimum - átlag - maximum")   
 
-    get_values("temp")
+    get_values(driver, "temp", weather_data)
 
-def get_soil_temperature_values(value):
+def get_soil_temperature_values(driver, value, weather_data):
     parameters = Select(driver.find_element(By.ID, "drought_parameter"))
     parameters.select_by_visible_text(value)
 
-    get_values("soil")
+    get_values(driver, "soil", weather_data)
 
-def get_moisture_temperature_values(value):
+def get_moisture_temperature_values(driver, value, weather_data):
     parameters = Select(driver.find_element(By.ID, "drought_parameter"))
     parameters.select_by_visible_text(value)
 
-    get_values("moisture")   
+    get_values(driver, "moisture", weather_data)   
 
 def send_to_mongodb(station, weather_data):
     client = MongoClient('mongodb://localhost:27017/')
-    db = client.weather_data
+    db = client.weather_data3
 
     # Créez une collection avec le nom de la station
     weather_collection = db[station]
 
-    for date, data in weather_data.items():
-        document = {
-            "date": date,
-            "data": data
-        }
-        weather_collection.insert_one(document)
+    with lock:
+        for date, data in weather_data.items():
+            document = {
+                "date": date,
+                "data": data
+            }
+            weather_collection.insert_one(document)
 
     client.close()
 
-def get_station_data(station):
-    select_option_by_text("drought_station", station)
 
-    today_date = datetime.date.today().strftime('%Y-%m-%d')
+def get_station_data(driver, station):
+    try:
+        weather_data = {}
+        print(f"Processing station: {station}")
 
-    for i in range(4):    
-        today_date_without_90_days = without_90_days(today_date)
+        select_option_by_text(driver, "drought_station", station)
 
-        start_date = driver.find_element(By.NAME, "drought_startdate")
-        start_date.clear()
-        start_date.send_keys(today_date_without_90_days)
+        today_date = datetime.date.today().strftime('%Y-%m-%d')
 
-        end_date = driver.find_element(By.NAME, "drought_enddate")
-        end_date.clear()
-        end_date.send_keys(str(today_date))
+        for i in range(4):   
+ 
+            today_date_without_90_days = without_90_days(today_date)
 
-        select_option_by_text("drought_interval", "napi")
+            start_date = driver.find_element(By.NAME, "drought_startdate")
+            start_date.clear()
+            start_date.send_keys(today_date_without_90_days)
 
-        get_temperature_values()
-        get_soil_temperature_values("Talajhőmérséklet(10 cm) (°C)")
-        get_soil_temperature_values("Talajhőmérséklet(20 cm) (°C)")
-        get_moisture_temperature_values("Talajnedvesség(10 cm) (V/V %)")
-        get_moisture_temperature_values("Talajnedvesség(20 cm) (V/V %)")
-        today_date = today_date_without_90_days
-        
+            end_date = driver.find_element(By.NAME, "drought_enddate")
+            end_date.clear()
+            end_date.send_keys(str(today_date))
+
+            select_option_by_text(driver, "drought_interval", "napi")  # Add 'driver' as the first argument
+
+            get_temperature_values(driver, weather_data)
+            get_soil_temperature_values(driver, "Talajhőmérséklet(10 cm) (°C)", weather_data)
+            get_moisture_temperature_values(driver, "Talajnedvesség(10 cm) (V/V %)", weather_data)
+            today_date = today_date_without_90_days
+            print(f"Finished processing {i + 1} iteration for station: {station}")
         send_to_mongodb(station, weather_data)
+        
+    except Exception as e:
+        with open("error_log.txt", "a") as f:
+            f.write(f"Error occurred while processing station {station}: {str(e)}\n")
 
-weather_data = {}
+
+
+
+def create_chrome_driver():
+    chrome_options = webdriver.ChromeOptions()
+    chromedriver_path = CHROME_DRIVER_PATH
+    s = Service(executable_path=chromedriver_path)
+    return webdriver.Chrome(service=s, options=chrome_options)
 
 url = WEBSITE_URL
-
-chrome_options = webdriver.ChromeOptions()
-chromedriver_path = CHROME_DRIVER_PATH
-s = Service(executable_path=chromedriver_path)
-
-driver = webdriver.Chrome(service=s, options=chrome_options)
-
-driver.get(url)
-
 stations = STATIONS
-for station in stations:
-    print(station)
-    get_station_data(station)
+lock = threading.Lock()
 
-driver.quit()
+
+def process_station(station):
+    print(station)
+    driver = create_chrome_driver()
+    driver.get(url)
+    get_station_data(driver, station)
+    driver.quit()
+
+with ThreadPoolExecutor(max_workers=WORKERS) as executor:
+    executor.map(process_station, stations)
